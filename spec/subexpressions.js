@@ -29,6 +29,21 @@ describe('subexpressions', function() {
     shouldCompileTo(string, [context, helpers], "val is true");
   });
 
+  it("mixed paths and helpers", function() {
+    var string   = '{{blog baz.bat (equal a b) baz.bar}}';
+
+    var context  = { bar: "LOL", baz: {bat: 'foo!', bar: 'bar!'} };
+    var helpers  = {
+      blog: function(val, that, theOther) {
+        return "val is " + val + ', ' + that + ' and ' + theOther;
+      },
+      equal: function(x, y) {
+        return x === y;
+      }
+    };
+    shouldCompileTo(string, [context, helpers], "val is foo!, true and bar!");
+  });
+
   it("supports much nesting", function() {
     var string   = '{{blog (equal (equal true true) true)}}';
 
@@ -42,6 +57,24 @@ describe('subexpressions', function() {
       }
     };
     shouldCompileTo(string, [context, helpers], "val is true");
+  });
+
+  it('GH-800 : Complex subexpressions', function() {
+    var context  = {a: 'a', b:'b', c:{c:'c'}, d:'d', e: {e: 'e'}};
+    var helpers  = {
+      dash: function(a, b) {
+        return a + "-" + b;
+      },
+      concat: function(a, b) {
+        return a + b;
+      }
+    };
+
+    shouldCompileTo('{{dash "abc" (concat a b)}}', [context, helpers], 'abc-ab');
+    shouldCompileTo('{{dash d (concat a b)}}', [context, helpers], 'd-ab');
+    shouldCompileTo('{{dash c.c (concat a b)}}', [context, helpers], 'c-ab');
+    shouldCompileTo('{{dash (concat a b) c.c}}', [context, helpers], 'ab-c');
+    shouldCompileTo('{{dash (concat a e.e) c.c}}', [context, helpers], 'ae-c');
   });
 
   it("provides each nested helper invocation its own options hash", function() {
@@ -87,6 +120,23 @@ describe('subexpressions', function() {
       }
     };
     shouldCompileTo(string, [{}, helpers], "val is true");
+  });
+
+  it("multiple subexpressions in a hash", function() {
+    var string = '{{input aria-label=(t "Name") placeholder=(t "Example User")}}';
+
+    var helpers = {
+      input: function(options) {
+        var hash        = options.hash;
+        var ariaLabel   = Handlebars.Utils.escapeExpression(hash['aria-label']);
+        var placeholder = Handlebars.Utils.escapeExpression(hash.placeholder);
+        return new Handlebars.SafeString('<input aria-label="' + ariaLabel + '" placeholder="' + placeholder + '" />');
+      },
+      t: function(defaultString) {
+        return new Handlebars.SafeString(defaultString);
+      }
+    }
+    shouldCompileTo(string, [{}, helpers], '<input aria-label="Name" placeholder="Example User" />');
   });
 
   it("in string params mode,", function() {

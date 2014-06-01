@@ -32,7 +32,7 @@ describe('javascript-compiler api', function() {
     });
     it('should allow compilerInfo override', function() {
       handlebarsEnv.JavaScriptCompiler.prototype.compilerInfo = function() {
-        return 'this.compilerInfo = "crazy";';
+        return 'crazy';
       };
       handlebarsEnv.VM.checkRevision = function(compilerInfo) {
         if (compilerInfo !== 'crazy') {
@@ -45,10 +45,12 @@ describe('javascript-compiler api', function() {
   describe('buffer', function() {
     var $superAppend, $superCreate;
     beforeEach(function() {
+      handlebarsEnv.JavaScriptCompiler.prototype.forceBuffer = true;
       $superAppend = handlebarsEnv.JavaScriptCompiler.prototype.appendToBuffer;
       $superCreate = handlebarsEnv.JavaScriptCompiler.prototype.initializeBuffer;
     });
     afterEach(function() {
+      handlebarsEnv.JavaScriptCompiler.prototype.forceBuffer = false;
       handlebarsEnv.JavaScriptCompiler.prototype.appendToBuffer = $superAppend;
       handlebarsEnv.JavaScriptCompiler.prototype.initializeBuffer = $superCreate;
     });

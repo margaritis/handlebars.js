@@ -1,4 +1,4 @@
-/*global CompilerContext, shouldCompileTo, compileWithPartials */
+/*global CompilerContext, shouldCompileTo, shouldThrow, compileWithPartials, handlebarsEnv */
 describe('builtin helpers', function() {
   describe('#if', function() {
     it("if", function() {
@@ -181,19 +181,48 @@ describe('builtin helpers', function() {
       equal(result, 'a!b!c!', 'should output data');
     });
 
+    it("each on implicit context", function() {
+      shouldThrow(function() {
+        var template = CompilerContext.compile("{{#each}}{{text}}! {{/each}}cruel world!");
+        template({});
+      }, handlebarsEnv.Exception, 'Must pass iterator to #each');
+    });
   });
 
   it("#log", function() {
-
     var string = "{{log blah}}";
     var hash   = { blah: "whee" };
 
     var levelArg, logArg;
-    handlebarsEnv.log = function(level, arg){ levelArg = level, logArg = arg; };
+    handlebarsEnv.log = function(level, arg){
+      levelArg = level;
+      logArg = arg;
+    };
 
     shouldCompileTo(string, hash, "", "log should not display");
     equals(1, levelArg, "should call log with 1");
     equals("whee", logArg, "should call log with 'whee'");
   });
 
+
+  describe('#lookup', function() {
+    it('should lookup arbitrary content', function() {
+      var string = '{{#each goodbyes}}{{lookup ../data .}}{{/each}}',
+          hash   = {goodbyes: [0, 1], data: ['foo', 'bar']};
+
+      var template = CompilerContext.compile(string);
+      var result = template(hash);
+
+      equal(result, 'foobar');
+    });
+    it('should not fail on undefined value', function() {
+      var string = '{{#each goodbyes}}{{lookup ../bar .}}{{/each}}',
+          hash   = {goodbyes: [0, 1], data: ['foo', 'bar']};
+
+      var template = CompilerContext.compile(string);
+      var result = template(hash);
+
+      equal(result, '');
+    });
+  });
 });

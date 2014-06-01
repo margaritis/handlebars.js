@@ -35,12 +35,17 @@ statements
   ;
 
 statement
-  : openInverse program closeBlock -> new yy.BlockNode($1, $2.inverse, $2, $3, @$)
+  : openRawBlock CONTENT END_RAW_BLOCK -> new yy.RawBlockNode($1, $2, $3, @$)
+  | openInverse program closeBlock -> new yy.BlockNode($1, $2.inverse, $2, $3, @$)
   | openBlock program closeBlock -> new yy.BlockNode($1, $2, $2.inverse, $3, @$)
   | mustache -> $1
   | partial -> $1
   | CONTENT -> new yy.ContentNode($1, @$)
   | COMMENT -> new yy.CommentNode($1, @$)
+  ;
+
+openRawBlock
+  : OPEN_RAW_BLOCK sexpr CLOSE_RAW_BLOCK -> new yy.MustacheNode($2, null, '', '', @$)
   ;
 
 openBlock
@@ -63,7 +68,8 @@ mustache
   ;
 
 partial
-  : OPEN_PARTIAL partialName path? CLOSE -> new yy.PartialNode($2, $3, stripFlags($1, $4), @$)
+  : OPEN_PARTIAL partialName param hash? CLOSE -> new yy.PartialNode($2, $3, $4, stripFlags($1, $5), @$)
+  | OPEN_PARTIAL partialName hash? CLOSE -> new yy.PartialNode($2, undefined, $3, stripFlags($1, $4), @$)
   ;
 
 simpleInverse
@@ -78,7 +84,7 @@ sexpr
 param
   : path -> $1
   | STRING -> new yy.StringNode($1, @$)
-  | INTEGER -> new yy.IntegerNode($1, @$)
+  | NUMBER -> new yy.NumberNode($1, @$)
   | BOOLEAN -> new yy.BooleanNode($1, @$)
   | dataName -> $1
   | OPEN_SEXPR sexpr CLOSE_SEXPR {$2.isHelper = true; $$ = $2;}
@@ -95,7 +101,7 @@ hashSegment
 partialName
   : path -> new yy.PartialNameNode($1, @$)
   | STRING -> new yy.PartialNameNode(new yy.StringNode($1, @$), @$)
-  | INTEGER -> new yy.PartialNameNode(new yy.IntegerNode($1, @$))
+  | NUMBER -> new yy.PartialNameNode(new yy.NumberNode($1, @$))
   ;
 
 dataName

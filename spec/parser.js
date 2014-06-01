@@ -21,6 +21,10 @@ describe('parser', function() {
     equals(ast_for("{{@foo}}"), "{{ @ID:foo [] }}\n");
   });
 
+  it('parses simple mustaches with data paths', function() {
+    equals(ast_for("{{@../foo}}"), "{{ @ID:foo [] }}\n");
+  });
+
   it('parses mustaches with paths', function() {
     equals(ast_for("{{foo/bar}}"), "{{ PATH:foo/bar [] }}\n");
   });
@@ -41,8 +45,8 @@ describe('parser', function() {
     equals(ast_for("{{foo bar \"baz\" }}"), '{{ ID:foo [ID:bar, "baz"] }}\n');
   });
 
-  it('parses mustaches with INTEGER parameters', function() {
-    equals(ast_for("{{foo 1}}"), "{{ ID:foo [INTEGER{1}] }}\n");
+  it('parses mustaches with NUMBER parameters', function() {
+    equals(ast_for("{{foo 1}}"), "{{ ID:foo [NUMBER{1}] }}\n");
   });
 
   it('parses mustaches with BOOLEAN parameters', function() {
@@ -56,7 +60,7 @@ describe('parser', function() {
 
   it('parses mustaches with hash arguments', function() {
     equals(ast_for("{{foo bar=baz}}"), "{{ ID:foo [] HASH{bar=ID:baz} }}\n");
-    equals(ast_for("{{foo bar=1}}"), "{{ ID:foo [] HASH{bar=INTEGER{1}} }}\n");
+    equals(ast_for("{{foo bar=1}}"), "{{ ID:foo [] HASH{bar=NUMBER{1}} }}\n");
     equals(ast_for("{{foo bar=true}}"), "{{ ID:foo [] HASH{bar=BOOLEAN{true}} }}\n");
     equals(ast_for("{{foo bar=false}}"), "{{ ID:foo [] HASH{bar=BOOLEAN{false}} }}\n");
     equals(ast_for("{{foo bar=@baz}}"), "{{ ID:foo [] HASH{bar=@ID:baz} }}\n");
@@ -67,7 +71,7 @@ describe('parser', function() {
     equals(ast_for("{{foo bat='bam'}}"), '{{ ID:foo [] HASH{bat="bam"} }}\n');
 
     equals(ast_for("{{foo omg bar=baz bat=\"bam\"}}"), '{{ ID:foo [ID:omg] HASH{bar=ID:baz, bat="bam"} }}\n');
-    equals(ast_for("{{foo omg bar=baz bat=\"bam\" baz=1}}"), '{{ ID:foo [ID:omg] HASH{bar=ID:baz, bat="bam", baz=INTEGER{1}} }}\n');
+    equals(ast_for("{{foo omg bar=baz bat=\"bam\" baz=1}}"), '{{ ID:foo [ID:omg] HASH{bar=ID:baz, bat="bam", baz=NUMBER{1}} }}\n');
     equals(ast_for("{{foo omg bar=baz bat=\"bam\" baz=true}}"), '{{ ID:foo [ID:omg] HASH{bar=ID:baz, bat="bam", baz=BOOLEAN{true}} }}\n');
     equals(ast_for("{{foo omg bar=baz bat=\"bam\" baz=false}}"), '{{ ID:foo [ID:omg] HASH{bar=ID:baz, bat="bam", baz=BOOLEAN{false}} }}\n');
   });
@@ -82,6 +86,14 @@ describe('parser', function() {
 
   it('parses a partial with context', function() {
     equals(ast_for("{{> foo bar}}"), "{{> PARTIAL:foo ID:bar }}\n");
+  });
+
+  it('parses a partial with hash', function() {
+    equals(ast_for("{{> foo bar=bat}}"), "{{> PARTIAL:foo HASH{bar=ID:bat} }}\n");
+  });
+
+  it('parses a partial with context and hash', function() {
+    equals(ast_for("{{> foo bar bat=baz}}"), "{{> PARTIAL:foo ID:bar HASH{bat=ID:baz} }}\n");
   });
 
   it('parses a partial with a complex name', function() {
@@ -148,6 +160,10 @@ describe('parser', function() {
     }, Error, /Parse error on line 1/);
     shouldThrow(function() {
       ast_for("{{#goodbyes}}{{/hellos}}");
+    }, Error, /goodbyes doesn't match hellos/);
+
+    shouldThrow(function() {
+      ast_for("{{{{goodbyes}}}} {{{{/hellos}}}}");
     }, Error, /goodbyes doesn't match hellos/);
   });
 
